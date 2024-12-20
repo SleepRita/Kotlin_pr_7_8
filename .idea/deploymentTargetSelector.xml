@@ -11,6 +11,9 @@
       <SelectionState runConfigName="checkUiElementsVisibility()">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
+      <SelectionState runConfigName="checkTextChangedDisplayAfterDownload()">
+        <option name="selectionMode" value="DROPDOWN" />
+      </SelectionState>
     </selectionStates>
   </component>
 </project>

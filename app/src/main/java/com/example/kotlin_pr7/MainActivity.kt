@@ -26,26 +26,40 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         val view = binding.root
+
+        // Создание обработчика для работы с потоками и задачами
         val handler = Handler(Looper.getMainLooper())
+
+        // Переменные для работы с изображениями
         var image: Bitmap? = null
-        lateinit var imag:InputStream
+        lateinit var imag: InputStream
+
         enableEdgeToEdge()
         setContentView(view)
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            // Устанавливаем отступы для View, чтобы контент не перекрывался системными панелями
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+
         binding.button.setOnClickListener {
-            lifecycleScope.launch{
-                Log.d("pr", "Some thread ${Thread.currentThread().name}")
+            // Запуск корутины с использованием lifecycleScope (позволяет управлять жизненным циклом корутины)
+            lifecycleScope.launch {
+                // Обновляем текст в TextView
                 binding.txt.text = "This is cat!"
 
-                val imageURL =
-                    "https://funik.ru/wp-content/uploads/2018/10/17478da42271207e1d86.jpg"
+                // URL изображения, которое мы будем загружать
+                val imageURL = "https://funik.ru/wp-content/uploads/2018/10/17478da42271207e1d86.jpg"
+
+                // Загружаем и сохраняем изображение с помощью метода downloadAndSaveImage
                 image = downloadAndSaveImage(imageURL)
+
+                // Если изображение успешно загружено, отображаем его в ImageView
                 if (image != null) {
                     binding.imageView.setImageBitmap(image)
                 }
@@ -53,39 +67,51 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // suspend функция для загрузки и сохранения изображения (она может быть приостановлена)
     suspend fun downloadAndSaveImage(imageUrl: String): Bitmap? {
-        // Переводим выполнение в фоновый поток
+        // Переводим выполнение в фоновый поток с помощью withContext
         val bitmap = withContext(Dispatchers.IO) {
-            downloadImage(imageUrl) // Загружаем изображение
+            // Загружаем изображение
+            downloadImage(imageUrl)
         }
-
 
         // Если изображение было успешно загружено, сохраняем его
         if (bitmap != null) {
+            // Сохраняем изображение в файл на диске
             withContext(Dispatchers.IO) {
                 saveImageToDisk(bitmap)
             }
         }
-
         return bitmap // Возвращаем результат (bitmap или null)
     }
 
+    // Функция для загрузки изображения из интернета
     fun downloadImage(imageUrl: String): Bitmap? = runCatching {
+        // Открываем соединение и получаем поток данных для изображения
         val connection = URL(imageUrl).openConnection()
         connection.doInput = true
         val input = connection.getInputStream()
+        // Декодируем поток в Bitmap
         BitmapFactory.decodeStream(input)
-    }.getOrNull()
+    }.getOrNull() // Если произошла ошибка, возвращаем null
 
+    // Функция для сохранения изображения на диск
     fun saveImageToDisk(bitmap: Bitmap) {
-
         runCatching {
+            // Получаем директорию для хранения изображений на внешнем хранилище
             val file = File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "downloaded_image.jpg")
+            // Создаем поток вывода для записи файла
             FileOutputStream(file).use { outputStream ->
+                // Сжимаем изображение в JPEG формат и записываем в файл
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-                // принудительная запись данных
+                // Принудительная запись данных в файл
                 outputStream.flush()
+                Log.d("rrr", "Изображение сохранено")
+
             }
-        }.onFailure { Log.d("rrr","Ошибка сохранения изображения") }
+        }.onFailure {
+            // Логируем ошибку в случае неудачного сохранения
+            Log.d("rrr", "Ошибка сохранения изображения")
+        }
     }
 }
